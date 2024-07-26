@@ -1,11 +1,15 @@
-from flask import Flask
+from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_restful import Resource, Api, reqparse, fields, marshal_with, abort
+import logging
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test-01.db'
 db = SQLAlchemy(app)
 api = Api(app)
+
+# Set up logging
+logging.basicConfig(level=logging.DEBUG)
 
 class UserModel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -33,13 +37,13 @@ class Users(Resource):
 
     @marshal_with(userFields)
     def post(self):
-        args = user_args.parse_args()
+        args = user_args.parse_args(strict=True)  # Ensure that only the defined args are accepted
+        logging.debug(f"Parsed arguments: {args}")
         user = UserModel(name=args['name'], email=args['email'])
         db.session.add(user)
         db.session.commit()
         users = UserModel.query.all()
         return users, 201
-
 
 class User(Resource):
     @marshal_with(userFields)
